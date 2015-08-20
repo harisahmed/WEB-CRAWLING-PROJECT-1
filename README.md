@@ -1,0 +1,2 @@
+# WEB-CRAWLING-PROJECT-1
+Write a script that will crawl this page:https://pro.beatport.com/genre/deep-house/12 Store the data for track artist and track name.  Then query the Spotify API https://developer.spotify.com/ and return the tracks that are in the catalogue.  The final output will be a HTML page that has hyperlinks to the playable tracks. It will not show those that are not in the Spotify database. There is no styling required for the HTML page.
