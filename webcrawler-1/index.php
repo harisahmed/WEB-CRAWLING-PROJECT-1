@@ -69,11 +69,11 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                         $artist = $track->find('.buk-track-artists > a')->first()->text();
                         $link_to_track = 'https://pro.beatport.com'.$track->find('.buk-track-title > a')->first()->attr('href');
 
-                        $id = $db->querySingle("select id from beatprottracks where track_name='$track' and artist='$artist'");
-                        if($id>0){
-                           $db->exec("update beatprottracks set link='$link_to_track' where id=".$id);
+                        $id = $db->querySingle('select id from beatprottracks where track_name="'.$title.'" and artist="'.$artist.'"');
+                        if($id){
+                           $db->exec('update beatprottracks set link="'.$link_to_track.'" where id='.$id);
                         }else{
-                            $db->exec("insert into beatprottracks ('track_name','artist','link') values ('$track_name','$artist','$link')");
+                            $db->exec('insert into beatprottracks ("track_name","artist","link") values ("'.$title.'","'.$artist.'","'.$link.'")');
                         }
                     }
                     $next_page = $htmlqp->find('.pag-next');
