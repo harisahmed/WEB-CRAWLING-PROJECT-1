@@ -1,3 +1,20 @@
+<?php
+class MyDB extends SQLite3
+{
+    function __construct()
+    {
+        $this->open(__DIR__.'/beatprot.sqlite');
+    }
+}
+
+if(!file_exists(__DIR__.'/beatprot.sqlite')){
+    $db = new MyDB();
+    $db->exec('CREATE TABLE IF NOT EXISTS "beatprottracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"track_name" VARCHAR(255) NOT NULL ,"artist" varchar(255) NOT NULL ,"link" TEXT )');
+}else{
+    $db = new MyDB();
+}
+
+?>
 <!DOCTYPE html>
 <html>
     <head>
@@ -27,6 +44,8 @@
             $pages = array('https://pro.beatport.com/genre/deep-house/12/tracks');
             $done = array();
 
+            $final_page = isset($_GET['pages'])?$_GET['pages']:2;
+
             echo '<pre>';
             $ipCount = 0;
             while ($pages) {
@@ -45,8 +64,17 @@
                     //we have some data to parse.
                     $tracks = $htmlqp->find('.track');
                     foreach($tracks as $track){
-                        echo 'Track Found:'.$track->find('.buk-track-primary-title')->first()->text(). '(' . $track->find('.buk-track-artists > a')->first()->text() . ")\r\n";
 
+                        $title = $track->find('.buk-track-primary-title')->first()->text();
+                        $artist = $track->find('.buk-track-artists > a')->first()->text();
+                        $link_to_track = 'https://pro.beatport.com'.$track->find('.buk-track-title > a')->first()->attr('href');
+
+                        $id = $db->querySingle("select id from beatprottracks where track_name='$track' and artist='$artist'");
+                        if($id>0){
+                           $db->exec("update beatprottracks set link='$link_to_track' where id=".$id);
+                        }else{
+                            $db->exec("insert into beatprottracks ('track_name','artist','link') values ('$track_name','$artist','$link')");
+                        }
                     }
                     $next_page = $htmlqp->find('.pag-next');
                     if($next_page->length>0){
@@ -57,7 +85,7 @@
 
                 $ipCount++;
 
-                if($ipCount==2)
+                if($ipCount==$final_page)
                     $pages = false;
 
             }
