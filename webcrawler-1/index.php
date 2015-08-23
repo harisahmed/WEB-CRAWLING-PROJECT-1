@@ -7,6 +7,20 @@
     <body>
         <h1>Web Crawler Project - 1</h1>
         <?php
+
+        function getFile($url){
+
+            $url_hash = md5($url);
+            if(file_exists($url_hash)){
+                return file_get_contents($url_hash);
+            }else{
+                $content = file_get_contents($link);
+                file_put_contents($url_hash, $content);
+                return $content;
+            }
+
+        }
+
             include __DIR__.'/qp/qp.php';
 
             $pages = array('https://pro.beatport.com/genre/deep-house/12/tracks');
@@ -20,10 +34,11 @@
 
                 $link = array_shift($pages);
                 $done[] = $link;
-                $content = file_get_contents($link);
+                //$content = file_get_contents($link);
+                $content = getFile($link);
 
                 //load qp with content fetched and initialise from body tag
-                $htmlqp = htmlqp($content,'body');
+                $htmlqp = @htmlqp($content,'body');
                 echo '<pre>';
                 if($htmlqp->length>0){
                     //we have some data to parse.
@@ -41,7 +56,7 @@
 
                 $ipCount++;
 
-                if($ipCount==3)
+                if($ipCount==2)
                     $pages = false;
 
             }
