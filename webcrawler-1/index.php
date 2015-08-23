@@ -12,8 +12,8 @@
             $pages = array('https://pro.beatport.com/genre/deep-house/12/tracks');
             $done = array();
 
-            
 
+            $ipCount = 0;
             while ($pages) {
 
                 set_time_limit(0);
@@ -38,6 +38,12 @@
                         $pages[] = $page;
                     }
                 }
+
+                $ipCount++;
+
+                if($ipCount==3)
+                    $pages = false;
+
             }
         ?>
     </body>
