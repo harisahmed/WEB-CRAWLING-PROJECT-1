@@ -78,9 +78,9 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                         //Geting artist id via Spotify Api
                         
                         foreach ($spotify_artist->artists->items as $spotify_id) {
-                            
+
                             if (strpos($spotify_id->name,$artist) !== false) {
-                            
+                            echo '<br>';
                             echo '<br>';
                             echo 'Beatport name is: '.$artist, '<br>';
                             echo '<br>';
@@ -88,6 +88,15 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                             echo '<br>';
                             echo 'Artist id on spotify is: '.$spotify_id->id, '<br>';
                             
+                            // Getting artist albums using artist id on Spotify
+                            
+                            $artist_albums = $api->getArtistAlbums($spotify_id->id);
+                                 foreach ($artist_albums->items as $album) {
+                                 echo '<br>';
+                                 echo $album->name. ' ' .$album->id . '<br>';
+                                 
+                                 $spotify_album_id = $album->id;
+                                }
                             }
                             else {
                                 echo '<br>';
