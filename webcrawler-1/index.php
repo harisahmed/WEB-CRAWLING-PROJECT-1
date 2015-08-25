@@ -96,17 +96,30 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                                  echo $album->name. ' ' .$album->id . '<br>';
                                  
                                  $spotify_album_id = $album->id;
+                                 
+                                 // Getting albums tracks using album id
+                                 
+                                 echo '<br>';
+                                 echo 'Album tracks:';
+                                 echo '<br>';
+                                 $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
+                                 
+                                 foreach ($spotify_tracks->items as $track_name) {
+                                 
+                                 $spotify_track_name = $track_name->name;
+                                 $spotify_track_uri = $track_name->uri;
+                                     
+                                 echo '<b>' . $spotify_track_name . ' '. $spotify_track_uri .'</b> <br>';
+                                 }
                                 }
-                            }
+                               }
                             else {
                                 echo '<br>';
                                 echo 'Not matched!', '<br>';
                                 echo 'Beatport name is: '.$artist, '<br>';
-                                echo 'Spotify name is: '.$spotify_id->name, '<br>';
-                                
+                                echo 'Spotify name is: '.$spotify_id->name, '<br>';   
+                                 }
                             }
-}
-                        
                         
                         $id = $db->querySingle('select id from beatprottracks where track_name="'.$title.'" and artist="'.$artist.'"');
                         if($id){
