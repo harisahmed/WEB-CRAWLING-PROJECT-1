@@ -118,7 +118,7 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                                  $id_s = $db->querySingle('select id from spotify where "track"="'.$title.'" and artist="'.$artist.'"');
                                  
                                 if($id_s){
-                                $db->exec('update spotify set Link="'.$spotify_track_uri.'" where id='.$spotify_track_name);
+                                $db->exec('update spotify set Link="'.$spotify_track_uri.'" where id='.$id_s);
                                 }else{
                                 $db->exec('insert into spotify ("Track","Artist","Link", "Album") values ("'.$spotify_track_name.'","'.$artist.'","'.$spotify_track_uri.'","'.$spotify_album_name.'")');
                                 }
