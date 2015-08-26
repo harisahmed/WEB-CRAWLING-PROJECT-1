@@ -9,6 +9,7 @@ class MyDB extends SQLite3
 
 if(!file_exists(__DIR__.'/beatprot.sqlite')){
     $db = new MyDB();
+    $db->exec('CREATE TABLE IF NOT EXISTS "spotify" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist" VARCHAR(255) NOT NULL ,"Album" varchar(255) NOT NULL ,"Track" varchar(255) NOT NULL, "Link" TEXT )');
     $db->exec('CREATE TABLE IF NOT EXISTS "beatprottracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"track_name" VARCHAR(255) NOT NULL ,"artist" varchar(255) NOT NULL ,"link" TEXT )');
 }else{
     $db = new MyDB();
@@ -96,6 +97,7 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                                  echo $album->name. ' ' .$album->id . '<br>';
                                  
                                  $spotify_album_id = $album->id;
+                                 $spotify_album_name = $album->name;
                                  
                                  // Getting albums tracks using album id
                                  
@@ -110,9 +112,20 @@ if(!file_exists(__DIR__.'/beatprot.sqlite')){
                                  $spotify_track_uri = $track_name->uri;
                                      
                                  echo '<b>' . $spotify_track_name . ' '. $spotify_track_uri .'</b> <br>';
-                                 }
+                                 
+                                 // Caching tracks to local database
+                                 
+                                 $id_s = $db->querySingle('select id from spotify where "track"="'.$title.'" and artist="'.$artist.'"');
+                                 
+                                if($id_s){
+                                $db->exec('update spotify set Link="'.$spotify_track_uri.'" where id='.$spotify_track_name);
+                                }else{
+                                $db->exec('insert into spotify ("Track","Artist","Link", "Album") values ("'.$spotify_track_name.'","'.$artist.'","'.$spotify_track_uri.'","'.$spotify_album_name.'")');
                                 }
-                               }
+                                }
+                                }
+                                }
+                                
                             else {
                                 echo '<br>';
                                 echo 'Not matched!', '<br>';
