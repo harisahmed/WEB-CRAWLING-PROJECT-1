@@ -14,6 +14,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
     $db->exec('CREATE TABLE IF NOT EXISTS "artist" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist_name" VARCHAR(255) NOT NULL ,"Artist_Spotify_id" varchar(255) )');
     $db->exec('CREATE TABLE IF NOT EXISTS "tracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist" VARCHAR(255) NOT NULL ,"Album" varchar(255) NOT NULL ,"Track" varchar(255) NOT NULL, "Link" TEXT )');
     $db->exec('CREATE TABLE IF NOT EXISTS "beatprottracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"track_name" VARCHAR(255) NOT NULL ,"artist" varchar(255) NOT NULL ,"link" TEXT )');
+    $db->exec('CREATE TABLE IF NOT EXISTS "display" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Track" VARCHAR(255) NOT NULL ,"Artist" varchar(255) NOT NULL ,"uri" TEXT )');
 } else {
     $db = new MyDB();
 }
@@ -176,8 +177,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                         $db->exec('update beatprottracks set link="' . $link_to_track . '" where id=' . $id);
                     } else {
                         $db->exec('insert into beatprottracks ("track_name","artist","link") values ("' . $title . '","' . $artist . '","' . $link . '")');
+                    }                 
                     }
-                }
                 $next_page = $htmlqp->find('.pag-next');
                 if ($next_page->length > 0) {
                     $pages = array('https://pro.beatport.com' . $next_page->first()->attr('href'));
@@ -189,6 +190,33 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
             if ($ipCount == $final_page)
                 $pages = false;
+        }
+        
+        $id_c = 0;
+
+        while (true) {
+
+            $id_c ++;
+
+            $check_id = $db->querySingle('select artist from beatprottracks where id="' . $id_c . '"');
+
+            if (empty($check_id)) {
+                echo '<br>';
+                echo 'Last row. Breaking the loop.';
+                echo '<br>';
+                break;
+            }
+
+            $get_track = $db->querySingle('select track_name from beatprottracks where id="' . $id_c . '" and artist="' . $check_id . '"');
+
+            $get_link = $db->querySingle('select Link from tracks where "Track" LIKE  "%' . $get_track . '%" and Artist LIKE  "' . $check_id . '"');
+
+
+            if ($get_link) {
+                echo '<br>';
+                echo 'Artist is: ' . $check_id . ' Track is: ' . $get_track . ' Link to track: ' . $get_link;
+                echo '<br>';
+            }
         }
         ?>
     </body>
