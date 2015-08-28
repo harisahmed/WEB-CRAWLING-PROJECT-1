@@ -76,7 +76,32 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $artist = $track->find('.buk-track-artists > a')->first()->text();
                     $link_to_track = 'https://pro.beatport.com' . $track->find('.buk-track-title > a')->first()->attr('href');
 
-                    $spotify_artist = $api->search($artist, 'artist');
+                    //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
+                    $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist_name . '"');
+                    if (!$artist_spotify_id) {
+                        $spotify_artist = $api->search($artist, 'artist');
+
+                        //Geting artist id via Spotify Api
+                        foreach ($spotify_artist->artists->items as $spotify_id) {
+
+                            if (strpos($spotify_id->name, $artist) !== false) {
+                                $artist_name = $spotify_id->name;
+                                $artist_spotify_id = $spotify_id->id;
+                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
+                            }
+                        }
+                    }
+                    //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
+
+                    // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
+
+
+
+
+                    // HERE DO THE SAME WITH TRACK. TRACKS DATA COULD ALSO BE REUSED SAME WAY.
+
+
+                    /*$spotify_artist = $api->search($artist, 'artist');
 
                     //Geting artist id via Spotify Api
 
@@ -113,7 +138,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                 $db->exec('update artist set "Artist_name"="' . $artist_name . '" where id=' . $artist_database_id);
                             } else {
                                 $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
-                            }
+                            }*/
 
                             // Getting artist albums using artist id on Spotify
 
@@ -160,14 +185,14 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                         $db->exec('insert into tracks ("Track","Artist","Link", "Album") values ("' . $spotify_track_name . '","' . $artist_name . '","' . $spotify_track_uri . '","' . $spotify_album_name . '")');
                                     }
                                 }
-                            }
+                            /*}
                         } else {
                             #echo '<br>';
                             #echo 'Not matched!', '<br>';
                             #echo 'Beatport name is: ' . $artist, '<br>';
                             #echo 'Spotify name is: ' . $spotify_id->name, '<br>';
                             $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $spotify_id->name . '","' . '' . '")');
-                        }
+                        }*/
                     }
 
                     $id = $db->querySingle('select id from beatprottracks where track_name="' . $title . '" and artist="' . $artist . '"');
