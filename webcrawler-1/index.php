@@ -223,7 +223,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                 echo '</tr>';
                 echo '<td>' . $check_id . '</td>';
                 echo '<td>' . $get_track . '</td>';
-                echo '<td>' . $get_link . '</td>';
+                echo '<td> <a href=' . $get_track . '>' . $get_link . '</a> </td>';
+                #echo '<td>' . $get_link . '</td>';
                 echo '<tr>';
             }
         }
