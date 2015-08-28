@@ -86,7 +86,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             #echo '<br>';
                             #echo '<br>';
                             #echo 'Beatport name is: ' . $artist, '<br>';
-                            echo '<br>';
+                            #echo '<br>';
                             echo '<br>';
                             echo '<br>';
                             echo 'Spotify name is: ' . $spotify_id->name, '<br>';
@@ -104,8 +104,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             //Check if artist name is already in local database
 
                             if (!empty($indatabase)) {
-                                echo '<br>';
-                                echo 'Artist already in database';
+                                #echo '<br>';
+                                echo 'Artist already in database.';
                                 break;
                             }
 
@@ -119,9 +119,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                             $artist_albums = $api->getArtistAlbums($spotify_id->id);
                             foreach ($artist_albums->items as $album) {
-                                echo '<br>';
-                                echo '<br>';
-                                echo 'Album name: '.$album->name . ' ' . $album->id . '<br>';
+                                #echo '<br>';
+                                #echo '<br>';
+                                #echo 'Album name: '.$album->name . ' ' . $album->id . '<br>';
 
                                 $spotify_album_id = $album->id;
                                 $spotify_album_name = $album->name;
@@ -137,10 +137,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                 }
 
                                 // Getting albums tracks using album id
-
-                                echo '<br>';
-                                echo 'Album tracks:';
-                                echo '<br>';
+                                #echo '<br>';
+                                #echo 'Album tracks:';
+                                #echo '<br>';
                                 $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
 
                                 foreach ($spotify_tracks->items as $track_name) {
@@ -149,9 +148,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                     $spotify_track_uri = $track_name->uri;
 
                                     #echo '<b>' . $spotify_track_name . ' ' . $spotify_track_uri . '</b> <br>';
-                                    echo '<br>';
-                                    echo $spotify_track_name;
-
+                                    #echo '<br>';
+                                    #echo $spotify_track_name;
                                     // Caching tracks to local database
 
                                     $id_s = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
@@ -164,10 +162,10 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                 }
                             }
                         } else {
-                            echo '<br>';
-                            echo 'Not matched!', '<br>';
-                            echo 'Beatport name is: ' . $artist, '<br>';
-                            echo 'Spotify name is: ' . $spotify_id->name, '<br>';
+                            #echo '<br>';
+                            #echo 'Not matched!', '<br>';
+                            #echo 'Beatport name is: ' . $artist, '<br>';
+                            #echo 'Spotify name is: ' . $spotify_id->name, '<br>';
                             $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $spotify_id->name . '","' . '' . '")');
                         }
                     }
@@ -177,8 +175,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                         $db->exec('update beatprottracks set link="' . $link_to_track . '" where id=' . $id);
                     } else {
                         $db->exec('insert into beatprottracks ("track_name","artist","link") values ("' . $title . '","' . $artist . '","' . $link . '")');
-                    }                 
                     }
+                }
                 $next_page = $htmlqp->find('.pag-next');
                 if ($next_page->length > 0) {
                     $pages = array('https://pro.beatport.com' . $next_page->first()->attr('href'));
@@ -191,8 +189,11 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
             if ($ipCount == $final_page)
                 $pages = false;
         }
-        
+
         $id_c = 0;
+
+        echo '<table border = "1" style = "width:100%">';
+        echo '<tr>';
 
         while (true) {
 
@@ -216,8 +217,17 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                 echo '<br>';
                 echo 'Artist is: ' . $check_id . ' Track is: ' . $get_track . ' Link to track: ' . $get_link;
                 echo '<br>';
+
+                $db->exec('insert into display ("Artist","Track","uri") values ("' . $check_id . '","' . $get_track . '","' . $get_link . '")');
+
+                echo '</tr>';
+                echo '<td>' . $check_id . '</td>';
+                echo '<td>' . $get_track . '</td>';
+                echo '<td>' . $get_link . '</td>';
+                echo '<tr>';
             }
         }
+        echo '</table>';
         ?>
     </body>
 </html>
