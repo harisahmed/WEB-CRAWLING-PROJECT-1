@@ -92,7 +92,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             
                              if ($artist_name === $artist) {
                                 echo '<br>';
-                                echo 'Artist name: ' . $artistp;
+                                echo 'Artist name: ' . $artist_name;
                                 echo '<br>';                                
                                 $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
                             }
