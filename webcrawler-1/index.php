@@ -97,7 +97,20 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
 
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
-
+                    
+                    $artist_albums = $api->getArtistAlbums($artist_spotify_id);
+                    foreach ($artist_albums->items as $album) {
+                        $spotify_album_name = $album->name;
+                        $spotify_album_id = $album->id;
+                        
+                        echo 'Spotify albume name is: '.$spotify_album_name;
+                        @$artist_album_id = $db->querySingle('select Album_id from album where Album_name="' . $spotify_album_name . '" and Artist_Spotify_id ="' . $artist_spotify_id . '")');
+                        
+                        if (!$artist_album_id) {
+                            $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_spotify_id . '")');
+                        }
+                        
+                    }
 
 
 
