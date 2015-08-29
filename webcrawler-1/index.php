@@ -82,7 +82,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
                     $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
                     echo '<br>';
-                    echo 'Artist id: '.$artist_spotify_id;
+                    echo 'Artist id: ' . $artist_spotify_id;
                     echo '<br>';
                     if (!$artist_spotify_id) {
                         $spotify_artist = $api->search($artist, 'artist');
@@ -92,20 +92,18 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                         //Geting artist id via Spotify Api
                         foreach ($spotify_artist->artists->items as $spotify_id) {
 
-                                $artist_name = $spotify_id->name;
-                                $artist_spotify_id = $spotify_id->id;
+                            $artist_name = $spotify_id->name;
+                            $artist_spotify_id = $spotify_id->id;
 
-                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
-                            
+                            $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
                         }
                     }
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
-
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
-                    
-                    
-                    $artist_albums = $api->getArtistAlbums($artist_spotify_id);
 
+                    if ($artist_spotify_id){
+                    $artist_albums = $api->getArtistAlbums($artist_spotify_id);
+                    
                     foreach ($artist_albums->items as $album) {
                         $spotify_album_name = $album->name;
                         $spotify_album_id = $album->id;
@@ -136,10 +134,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             }
                         }
                     }
-
-                    
-
-
+                    }
                     $id = $db->querySingle('select id from beatprottracks where track_name="' . $title . '" and artist="' . $artist . '"');
                     if ($id) {
                         $db->exec('update beatprottracks set link="' . $link_to_track . '" where id=' . $id);
