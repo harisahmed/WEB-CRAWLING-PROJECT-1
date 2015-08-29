@@ -81,14 +81,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                     //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
                     $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
-                    echo '<br>';
-                    echo 'Artist id: ' . $artist_spotify_id;
-                    echo '<br>';
+
                     if (!$artist_spotify_id) {
                         $spotify_artist = $api->search($artist, 'artist');
-                        echo '<br>';
-                        echo 'NOT FOUND IN DATABASE';
-                        echo '<br>';
                         //Geting artist id via Spotify Api
                         foreach ($spotify_artist->artists->items as $spotify_id) {
 
@@ -96,7 +91,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             $artist_spotify_id = $spotify_id->id;
                             
                              if ($artist_name === $artist) {
-                                echo 'Got one: '.$artist.'<br>'.$artist_name;
+                                echo '<br>';
+                                echo 'Artist name: ' . $artistp;
+                                echo '<br>';                                
                                 $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
                             }
                         }
@@ -107,9 +104,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $artist_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
                     
                     if ($artist_id) {
-                        echo '<br>';
-                        echo 'Artist in base';
-                        continue;
+
                         $artist_albums = $api->getArtistAlbums($artist_id);
 
                         foreach ($artist_albums->items as $album) {
@@ -119,7 +114,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             $album_id = $db->querySingle('select id from album where Album_id="' . $spotify_album_id . '" ');
 
                             if (!$album_id) {
-                                echo 'Trying to find';
+                                
                                 $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_id . '")');
 
                                 $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
@@ -137,13 +132,10 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                     }
                                 }
                             } elseif ($album_id) {
-                                echo 'Album in local base';
-                                break;
+                                continue;                                
+                                
                                 $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
                                 if ($tracks_in_album) {
-                                    echo '<br>';
-                                    echo 'Skipping';
-                                    echo '<br>';
                                     continue;
                                 }
 
