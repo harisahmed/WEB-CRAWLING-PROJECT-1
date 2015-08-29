@@ -80,7 +80,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $link_to_track = 'https://pro.beatport.com' . $track->find('.buk-track-title > a')->first()->attr('href');
 
                     //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
-                    $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist_name . '"');
+                    $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
                     echo '<br>';
                     echo 'Artist id: ' . $artist_spotify_id;
                     echo '<br>';
@@ -89,24 +89,22 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                         echo '<br>';
                         echo 'NOT FOUND IN DATABASE';
                         echo '<br>';
-
                         //Geting artist id via Spotify Api
                         foreach ($spotify_artist->artists->items as $spotify_id) {
 
                             $artist_name = $spotify_id->name;
                             $artist_spotify_id = $spotify_id->id;
-                            echo 'Spotify id:'.$spotify_id->id;
-                            echo 'Artist name:'.$artist_name;
-                            if ($spotify_artist and $spotify_id) {
-                                if (strpos($spotify_id->name, $artist) !== false) {
-                                    $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
-                                }
-                            }
+
+                            if ($spotify_artist and $spotify_id):
+                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
+                            elseif (!$spotify_id):
+                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . 'No_id' . '")');
+                            endif;
                         }
                     }
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
-                    
+
                     if ($artist_spotify_id and $artist_spotify_id != 'No_id') {
 
                         $artist_albums = $api->getArtistAlbums($artist_spotify_id);
