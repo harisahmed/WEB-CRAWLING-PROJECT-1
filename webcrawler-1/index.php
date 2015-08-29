@@ -46,8 +46,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
         }
 
         include __DIR__ . '/qp/qp.php';
-        require '/spotify-web-api-php-master/src/SpotifyWebAPI.php';
-        require '/spotify-web-api-php-master/src/Request.php';
+        require __DIR__ .'/spotify-web-api-php-master/src/SpotifyWebAPI.php';
+        require __DIR__ .'/spotify-web-api-php-master/src/Request.php';
 
         $api = new SpotifyWebAPI\SpotifyWebAPI();
 
