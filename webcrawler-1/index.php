@@ -94,20 +94,21 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                             $artist_name = $spotify_id->name;
                             $artist_spotify_id = $spotify_id->id;
-
-                            if ($spotify_artist and $spotify_id):
+                            
+                             if ($artist_name === $artist) {
+                                echo 'Got one: '.$artist.'<br>'.$artist_name;
                                 $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
-                            elseif (!$spotify_id):
-                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . 'No_id' . '")');
-                            endif;
+                            }
                         }
                     }
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
 
-                    if ($artist_spotify_id and $artist_spotify_id != 'No_id') {
+                    $artist_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
+                    
+                    if ($artist_id) {
 
-                        $artist_albums = $api->getArtistAlbums($artist_spotify_id);
+                        $artist_albums = $api->getArtistAlbums($artist_id);
 
                         foreach ($artist_albums->items as $album) {
                             $spotify_album_name = $album->name;
@@ -117,7 +118,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                             if (!$album_id) {
                                 echo 'Trying to find';
-                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_spotify_id . '")');
+                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_id . '")');
 
                                 $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
 
