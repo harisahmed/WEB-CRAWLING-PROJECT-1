@@ -106,8 +106,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     if ($artist_id) {
 
                         $artist_albums = $api->getArtistAlbums($artist_id);
-
-                        foreach ($artist_albums->items as $album) {
+ 
+                       foreach ($artist_albums->items as $album) {
                             $spotify_album_name = $album->name;
                             $spotify_album_id = $album->id;
 
