@@ -95,45 +95,65 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             $artist_name = $spotify_id->name;
                             $artist_spotify_id = $spotify_id->id;
 
-                            $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
+                            if ($spotify_artist and $spotify_id):
+                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
+                            elseif (!$spotify_id):
+                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . ' ' . '")');
+                            endif;
                         }
                     }
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
 
-                    if ($artist_spotify_id){
-                    $artist_albums = $api->getArtistAlbums($artist_spotify_id);
-                    
-                    foreach ($artist_albums->items as $album) {
-                        $spotify_album_name = $album->name;
-                        $spotify_album_id = $album->id;
-                        echo '<br>';
-                        echo 'Spotify albume name is: ' . $spotify_album_name;
-                        echo '<br>';
+                    if ($artist_spotify_id) {
+                        $artist_albums = $api->getArtistAlbums($artist_spotify_id);
 
-                        $album_id = $db->querySingle('select id from album where Album_id="' . $spotify_album_id . '" ');
+                        foreach ($artist_albums->items as $album) {
+                            $spotify_album_name = $album->name;
+                            $spotify_album_id = $album->id;
+                            echo '<br>';
+                            echo 'Spotify albume name is: ' . $spotify_album_name;
+                            echo '<br>';
 
-                        if (!$album_id) {
-                            $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_spotify_id . '")');
-                        } elseif ($album_id) {
-                            // HERE DO THE SAME WITH TRACK. TRACKS DATA COULD ALSO BE REUSED SAME WAY.
-                            $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
+                            $album_id = $db->querySingle('select id from album where Album_id="' . $spotify_album_id . '" ');
 
-                            if ($spotify_tracks) {
+                            if (!$album_id) {
+                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_spotify_id . '")');
 
-                                foreach ($spotify_tracks->items as $track_name) {
+                                $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
 
-                                    $spotify_track_name = $track_name->name;
-                                    $spotify_track_uri = $track_name->uri;
+                                if ($spotify_tracks) {
 
-                                    $track_id = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
-                                    if (!$track_id) {
-                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ("' . $spotify_track_name . '","' . $artist . '","' . $spotify_track_uri . '","' . $spotify_album_name . '","' . $spotify_album_id . '")');
+                                    foreach ($spotify_tracks->items as $track_name) {
+
+                                        $spotify_track_name = $track_name->name;
+                                        $spotify_track_uri = $track_name->uri;
+
+                                        $track_id = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
+                                        if (!$track_id) {
+                                            $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ("' . $spotify_track_name . '","' . $artist . '","' . $spotify_track_uri . '","' . $spotify_album_name . '","' . $spotify_album_id . '")');
+                                        }
+                                    }
+                                }
+                            } elseif ($album_id) {
+
+                                $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
+
+                                if ($spotify_tracks) {
+
+                                    foreach ($spotify_tracks->items as $track_name) {
+
+                                        $spotify_track_name = $track_name->name;
+                                        $spotify_track_uri = $track_name->uri;
+
+                                        $track_id = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
+                                        if (!$track_id) {
+                                            $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ("' . $spotify_track_name . '","' . $artist . '","' . $spotify_track_uri . '","' . $spotify_album_name . '","' . $spotify_album_id . '")');
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
                     }
                     $id = $db->querySingle('select id from beatprottracks where track_name="' . $title . '" and artist="' . $artist . '"');
                     if ($id) {
