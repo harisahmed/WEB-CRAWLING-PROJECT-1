@@ -10,9 +10,12 @@ class MyDB extends SQLite3 {
 
 if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
     $db = new MyDB();
-    $db->exec('CREATE TABLE IF NOT EXISTS "album" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Album_name" VARCHAR(255) NOT NULL ,"Album_id" varchar(255) NOT NULL )');
+    //added artist_spotify_id in album table to identify that the album relates to which artist.
+    $db->exec('CREATE TABLE IF NOT EXISTS "album" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Album_name" VARCHAR(255) NOT NULL ,"Album_id" varchar(255) NOT NULL,"Artist_Spotify_id" varchar(255) )');
     $db->exec('CREATE TABLE IF NOT EXISTS "artist" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist_name" VARCHAR(255) NOT NULL ,"Artist_Spotify_id" varchar(255) )');
-    $db->exec('CREATE TABLE IF NOT EXISTS "tracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist" VARCHAR(255) NOT NULL ,"Album" varchar(255) NOT NULL ,"Track" varchar(255) NOT NULL, "Link" TEXT )');
+
+    //added album ID to tracks table to identify track related to which album.
+    $db->exec('CREATE TABLE IF NOT EXISTS "tracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist" VARCHAR(255) NOT NULL ,"Album" varchar(255) NOT NULL ,"Album_id" varchar(255) NOT NULL,"Track" varchar(255) NOT NULL, "Link" TEXT )');
     $db->exec('CREATE TABLE IF NOT EXISTS "beatprottracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"track_name" VARCHAR(255) NOT NULL ,"artist" varchar(255) NOT NULL ,"link" TEXT )');
     $db->exec('CREATE TABLE IF NOT EXISTS "display" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Track" VARCHAR(255) NOT NULL ,"Artist" varchar(255) NOT NULL ,"uri" TEXT )');
 } else {
