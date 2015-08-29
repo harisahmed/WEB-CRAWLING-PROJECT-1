@@ -107,7 +107,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $artist_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
                     
                     if ($artist_id) {
-
+                        echo '<br>';
+                        echo 'Artist in base';
+                        continue;
                         $artist_albums = $api->getArtistAlbums($artist_id);
 
                         foreach ($artist_albums->items as $album) {
@@ -136,7 +138,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                 }
                             } elseif ($album_id) {
                                 echo 'Album in local base';
-
+                                break;
                                 $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
                                 if ($tracks_in_album) {
                                     echo '<br>';
@@ -203,8 +205,15 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
 
             if ($get_link) {
-
-                $db->exec('insert into display ("Artist","Track","uri") values ("' . $check_id . '","' . $get_track . '","' . $get_link . '")');
+                
+                $display_id = $db->querySingle('select id from display where Track="' . $get_track . '" and uri="' . $get_link . '"');
+                
+                if ($display_id) {
+                        $db->exec('update display set uri="' . $get_track . '" where id=' . $display_id);
+                    } else {
+                        $db->exec('insert into display ("Artist","Track","uri") values ("' . $check_id . '","' . $get_track . '","' . $get_link . '")');
+                    }
+                
 
                 echo '</tr>';
                 echo '<td>' . $check_id . '</td>';
