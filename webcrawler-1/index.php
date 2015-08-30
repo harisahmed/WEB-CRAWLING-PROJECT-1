@@ -80,94 +80,45 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $link_to_track = 'https://pro.beatport.com' . $track->find('.buk-track-title > a')->first()->attr('href');
 
                     //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
-                    $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist_name . '"');
+                    $artist_spotify_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
+
                     if (!$artist_spotify_id) {
                         $spotify_artist = $api->search($artist, 'artist');
-
                         //Geting artist id via Spotify Api
                         foreach ($spotify_artist->artists->items as $spotify_id) {
 
-                            if (strpos($spotify_id->name, $artist) !== false) {
-                                $artist_name = $spotify_id->name;
-                                $artist_spotify_id = $spotify_id->id;
+                            $artist_name = $spotify_id->name;
+                            $artist_spotify_id = $spotify_id->id;
+                            
+                             if ($artist_name === $artist) {
+                                echo '<br>';
+                                echo 'Artist name: ' . $artist_name;
+                                echo '<br>';                                
                                 $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
                             }
                         }
                     }
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
-
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
 
+                    $artist_id = $db->querySingle('select Artist_spotify_id from artist where Artist_name="' . $artist . '"');
+                    
+                    if ($artist_id) {
 
+                        $artist_albums = $api->getArtistAlbums($artist_id);
+ 
+                       foreach ($artist_albums->items as $album) {
+                            $spotify_album_name = $album->name;
+                            $spotify_album_id = $album->id;
 
+                            $album_id = $db->querySingle('select id from album where Album_id="' . $spotify_album_id . '" ');
 
-                    // HERE DO THE SAME WITH TRACK. TRACKS DATA COULD ALSO BE REUSED SAME WAY.
+                            if (!$album_id) {
+                                
+                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '","' . $artist_id . '")');
 
+                                $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
 
-                    /*$spotify_artist = $api->search($artist, 'artist');
-
-                    //Geting artist id via Spotify Api
-
-                    foreach ($spotify_artist->artists->items as $spotify_id) {
-
-                        if (strpos($spotify_id->name, $artist) !== false) {
-                            #echo '<br>';
-                            #echo '<br>';
-                            #echo 'Beatport name is: ' . $artist, '<br>';
-                            #echo '<br>';
-                            echo '<br>';
-                            echo '<br>';
-                            echo 'Spotify name is: ' . $spotify_id->name, '<br>';
-                            echo '<br>';
-                            #echo 'Artist id on spotify is: ' . $spotify_id->id, '<br>';
-
-                            $artist_name = $spotify_id->name;
-                            $artist_spotify_id = $spotify_id->id;
-
-                            // Saving artist name and id to database
-
-                            $indatabase = $db->querySingle('select Artist_name from artist where "Artist_name"="' . $artist_name . '" and "Artist_spotify_id"="' . $artist_spotify_id . '"');
-                            $artist_database_id = $db->querySingle('select id from artist where "Artist_name"="' . $artist_name . '" and "Artist_spotify_id"="' . $artist_spotify_id . '"');
-
-                            //Check if artist name is already in local database
-
-                            if (!empty($indatabase)) {
-                                #echo '<br>';
-                                echo 'Artist already in database.';
-                                break;
-                            }
-
-                            if ($artist_database_id) {
-                                $db->exec('update artist set "Artist_name"="' . $artist_name . '" where id=' . $artist_database_id);
-                            } else {
-                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $artist_name . '","' . $artist_spotify_id . '")');
-                            }*/
-
-                            // Getting artist albums using artist id on Spotify
-
-                            $artist_albums = $api->getArtistAlbums($spotify_id->id);
-                            foreach ($artist_albums->items as $album) {
-                                #echo '<br>';
-                                #echo '<br>';
-                                #echo 'Album name: '.$album->name . ' ' . $album->id . '<br>';
-
-                                $spotify_album_id = $album->id;
-                                $spotify_album_name = $album->name;
-
-                                $album_database_id = $db->querySingle('select id from album where "Album_name"="' . $spotify_album_name . '" and album_id="' . $spotify_album_id . '"');
-
-                                #echo 'Album_id is:' . $album_database_id;
-
-                                if ($album_database_id) {
-                                    $db->exec('update album set "Album_name"="' . $spotify_album_name . '" where id=' . $album_database_id);
-                                } else {
-                                    $db->exec('insert into album ("Album_name","Album_id") values ("' . $spotify_album_name . '","' . $spotify_album_id . '")');
-                                }
-
-                                // Getting albums tracks using album id
-                                #echo '<br>';
-                                #echo 'Album tracks:';
-                                #echo '<br>';
                                 $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
 
                                 foreach ($spotify_tracks->items as $track_name) {
@@ -175,29 +126,33 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                     $spotify_track_name = $track_name->name;
                                     $spotify_track_uri = $track_name->uri;
 
-                                    #echo '<b>' . $spotify_track_name . ' ' . $spotify_track_uri . '</b> <br>';
-                                    #echo '<br>';
-                                    #echo $spotify_track_name;
-                                    // Caching tracks to local database
-
-                                    $id_s = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
-
-                                    if ($id_s) {
-                                        $db->exec('update tracks set Link="' . $spotify_track_uri . '" where id=' . $id_s);
-                                    } else {
-                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album") values ("' . $spotify_track_name . '","' . $artist_name . '","' . $spotify_track_uri . '","' . $spotify_album_name . '")');
+                                    $track_id = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
+                                    if (!$track_id) {
+                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ("' . $spotify_track_name . '","' . $artist . '","' . $spotify_track_uri . '","' . $spotify_album_name . '","' . $spotify_album_id . '")');
                                     }
                                 }
-                            /*}
-                        } else {
-                            #echo '<br>';
-                            #echo 'Not matched!', '<br>';
-                            #echo 'Beatport name is: ' . $artist, '<br>';
-                            #echo 'Spotify name is: ' . $spotify_id->name, '<br>';
-                            $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ("' . $spotify_id->name . '","' . '' . '")');
-                        }*/
-                    }
+                            } elseif ($album_id) {
+                                continue;                                
+                                
+                                $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
+                                if ($tracks_in_album) {
+                                    continue;
+                                }
 
+                                $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
+                                foreach ($spotify_tracks->items as $track_name) {
+
+                                    $spotify_track_name = $track_name->name;
+                                    $spotify_track_uri = $track_name->uri;
+
+                                    $track_id = $db->querySingle('select id from tracks where "Track"="' . $spotify_track_name . '" and Link="' . $spotify_track_uri . '"');
+                                    if (!$track_id) {
+                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ("' . $spotify_track_name . '","' . $artist . '","' . $spotify_track_uri . '","' . $spotify_album_name . '","' . $spotify_album_id . '")');
+                                    }
+                                }
+                            }
+                        }
+                    }
                     $id = $db->querySingle('select id from beatprottracks where track_name="' . $title . '" and artist="' . $artist . '"');
                     if ($id) {
                         $db->exec('update beatprottracks set link="' . $link_to_track . '" where id=' . $id);
@@ -242,11 +197,15 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
 
             if ($get_link) {
-                echo '<br>';
-                echo 'Artist is: ' . $check_id . ' Track is: ' . $get_track . ' Link to track: ' . $get_link;
-                echo '<br>';
-
-                $db->exec('insert into display ("Artist","Track","uri") values ("' . $check_id . '","' . $get_track . '","' . $get_link . '")');
+                
+                $display_id = $db->querySingle('select id from display where Track="' . $get_track . '" and uri="' . $get_link . '"');
+                
+                if ($display_id) {
+                        $db->exec('update display set uri="' . $get_track . '" where id=' . $display_id);
+                    } else {
+                        $db->exec('insert into display ("Artist","Track","uri") values ("' . $check_id . '","' . $get_track . '","' . $get_link . '")');
+                    }
+                
 
                 echo '</tr>';
                 echo '<td>' . $check_id . '</td>';
