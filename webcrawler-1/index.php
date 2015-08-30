@@ -11,13 +11,37 @@ class MyDB extends SQLite3 {
 if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
     $db = new MyDB();
     //added artist_spotify_id in album table to identify that the album relates to which artist.
-    $db->exec('CREATE TABLE IF NOT EXISTS "album" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Album_name" VARCHAR(255) NOT NULL ,"Album_id" varchar(255) NOT NULL,"Artist_Spotify_id" varchar(255) )');
-    $db->exec('CREATE TABLE IF NOT EXISTS "artist" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist_name" VARCHAR(255) NOT NULL ,"Artist_Spotify_id" varchar(255) )');
+    $db->exec('CREATE TABLE IF NOT EXISTS "album" ("id" INTEGER PRIMARY KEY  NOT NULL ,'
+            . '"Album_name" VARCHAR(255) NOT NULL ,'
+            . '"Album_id" varchar(255) NOT NULL,'
+            . '"Artist_Spotify_id" varchar(255) )');
+
+    $db->exec('CREATE TABLE IF NOT EXISTS "artist" ("id" INTEGER PRIMARY KEY  NOT NULL ,'
+            . '"Artist_name" VARCHAR(255) NOT NULL ,'
+            . '"Artist_Spotify_id" varchar(255) )');
+
+    $db->exec('CREATE INDEX artist_name ON artist (Artist_name ASC)');
+    $db->exec('CREATE INDEX artist_albums ON album (Artist_Spotify_id ASC)');
 
     //added album ID to tracks table to identify track related to which album.
-    $db->exec('CREATE TABLE IF NOT EXISTS "tracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Artist" VARCHAR(255) NOT NULL ,"Album" varchar(255) NOT NULL ,"Album_id" varchar(255) NOT NULL,"Track" varchar(255) NOT NULL, "Link" TEXT )');
-    $db->exec('CREATE TABLE IF NOT EXISTS "beatprottracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,"track_name" VARCHAR(255) NOT NULL ,"artist" varchar(255) NOT NULL ,"link" TEXT )');
-    $db->exec('CREATE TABLE IF NOT EXISTS "display" ("id" INTEGER PRIMARY KEY  NOT NULL ,"Track" VARCHAR(255) NOT NULL ,"Artist" varchar(255) NOT NULL ,"uri" TEXT )');
+    $db->exec('CREATE TABLE IF NOT EXISTS "tracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,'
+            . '"Artist" VARCHAR(255) NOT NULL ,'
+            . '"Album" varchar(255) NOT NULL ,'
+            . '"Album_id" varchar(255) NOT NULL,'
+            . '"Track" varchar(255) NOT NULL,'
+            . ' "Link" TEXT )');
+    $db->exec('CREATE INDEX albums_tracks ON tracks (Album_id ASC)');
+
+    $db->exec('CREATE TABLE IF NOT EXISTS "beatprottracks" ("id" INTEGER PRIMARY KEY  NOT NULL ,'
+            . '"track_name" VARCHAR(255) NOT NULL ,'
+            . '"artist" varchar(255) NOT NULL ,'
+            . '"link" TEXT )');
+
+    $db->exec('CREATE TABLE IF NOT EXISTS "display" ("id" INTEGER PRIMARY KEY  NOT NULL ,'
+            . '"Track" VARCHAR(255) NOT NULL ,'
+            . '"Artist" varchar(255) NOT NULL ,'
+            . '"uri" TEXT )');
+
 } else {
     $db = new MyDB();
 }
@@ -80,7 +104,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $link_to_track = 'https://pro.beatport.com' . $track->find('.buk-track-title > a')->first()->attr('href');
 
                     //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
-                    $artist_spotify_id = $db->querySingle("select Artist_spotify_id from artist where Artist_name='" . addslashes($artist) . "'");
+                    $artist_spotify_id = $db->querySingle("select Artist_spotify_id from artist where Artist_name='" . SQLite3::escapeString($artist) . "'");
 
                     if (!$artist_spotify_id) {
                         $spotify_artist = $api->search($artist, 'artist');
@@ -88,34 +112,86 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                         foreach ($spotify_artist->artists->items as $spotify_id) {
 
                             $artist_name = $spotify_id->name;
-                            $artist_spotify_id = $spotify_id->id;
+                            $artist_spotify_id_tmp = $spotify_id->id; // store in temp var.
 
                              if ($artist_name === $artist) {
+                                $artist_spotify_id = $spotify_id->id; //this is what we need
                                 echo '<br>';
                                 echo 'Artist name: ' . $artist_name;
                                 echo '<br>';
-                                $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ('."'" . addslashes($artist_name) . "','" . $artist_spotify_id . "')");
                             }
+                            //will save all artist IDs in DB for caching
+                            $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ('."'" . SQLite3::escapeString($artist_name) . "','" . $artist_spotify_id_tmp . "')");
                         }
                     }
                     //HERE I MUST HAVE ARTIST ID. EITHER FROM DATABASE OR SPOTIFY
                     // NOW DO THE SAME PROCESS FOR ARTIST ALBUMS.
 
-                    $artist_id = $db->querySingle("select Artist_spotify_id from artist where Artist_name='" . addslashes($artist) . "'");
 
-                    if ($artist_id) {
+                    //you dont  need it here. You must have artist spotify ID here from upper portion of source code block.
+                    //$artist_id = $db->querySingle("select Artist_spotify_id from artist where Artist_name='" . SQLite3::escapeString($artist) . "'");
 
-                        $artist_albums = $api->getArtistAlbums($artist_id);
+                    if ($artist_spotify_id) { //changed to artist spotify ID we found in upper code block.
+
+                        $artist_albums = new stdClass();
+                        $artist_albums->items = array();
+                        $artist_albums_result = $db->query("select * from album where Artist_Spotify_id='" . SQLite3::escapeString($artist_spotify_id) . "'");
+                        while ($album = $artist_albums_result->fetchArray()) {
+                            //here you have database fetched artist albums. saved during last run. use it
+                            $item = new stdClass();
+                            $item->name=$album['Album_name'];
+                            $item->id=$album['Album_id'];
+                            $artist_albums->items[] = $item;
+                        }
+
+                        if(count($artist_albums->items)==0){ // search spotify for artist albums only if database does not contain any albums.
+                            $artist_albums = $api->getArtistAlbums($artist_spotify_id);
+
+                            foreach ($artist_albums->items as $album) {
+                                $spotify_album_name = $album->name;
+                                $spotify_album_id = $album->id;
+
+                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ('."'" . SQLite3::escapeString($spotify_album_name) . "','" . $spotify_album_id . "','" . $artist_spotify_id . "')");
+                            }
+
+                        }
 
                        foreach ($artist_albums->items as $album) {
                             $spotify_album_name = $album->name;
                             $spotify_album_id = $album->id;
 
-                            $album_id = $db->querySingle('select id from album where Album_id="' . $spotify_album_id . '" ');
+                            $spotify_tracks = new stdClass();
+                            $spotify_tracks->items = array();
+                            $spotify_tracks_result = $db->query("select * from tracks where Album_id='" . SQLite3::escapeString($spotify_album_id) . "'");
+                            while ($track = $spotify_tracks_result->fetchArray()) {
+                                //here you have database fetched artist albums tacks. saved during last run. use it
+                                $item = new stdClass();
+                                $item->name = $track['Track'];
+                                $item->external_urls = new stdClass();
+                                $item->external_urls->spotify = $track['Link'];
+                                $spotify_tracks->items[] = $item;
+                            }
 
-                            if (!$album_id) {
+                            if(count($spotify_tracks->items)==0){ // search spotify for artist albums only if database does not contain any albums.
+                                $spotify_tracks = $api->getAlbumTracks($spotify_album_id);
 
-                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ('."'" . addslashes($spotify_album_name) . "','" . $spotify_album_id . "','" . $artist_id . "')");
+                                foreach ($spotify_tracks->items as $track) {
+                                    $spotify_track_name = $track->name;
+                                    $spotify_track_uri = $track->external_urls->spotify;
+
+                                    $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ('."'"
+                                                                    . SQLite3::escapeString($spotify_track_name) . "','"
+                                                                    . SQLite3::escapeString($artist) . "','"
+                                                                    . $spotify_track_uri . "','"
+                                                                    . SQLite3::escapeString($spotify_album_name) . "','"
+                                                                    . $spotify_album_id . "')");
+
+                                }
+                            }
+
+                            /*if (!$album_id) {
+
+                                $db->exec('insert into album ("Album_name","Album_id", "Artist_spotify_id") values ('."'" . SQLite3::escapeString($spotify_album_name) . "','" . $spotify_album_id . "','" . $artist_id . "')");
 
                                 $tracks_in_album = $db->querySingle('select id from tracks where Album_id="' . $spotify_album_id . '" ');
 
@@ -126,9 +202,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                     $spotify_track_name = $track_name->name;
                                     $spotify_track_uri = $track_name->uri;
 
-                                    $track_id = $db->querySingle('select id from tracks where Track='."'" . addslashes($spotify_track_name) . "' and Link='" . $spotify_track_uri . "'");
+                                    $track_id = $db->querySingle('select id from tracks where Track='."'" . SQLite3::escapeString($spotify_track_name) . "' and Link='" . $spotify_track_uri . "'");
                                     if (!$track_id) {
-                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ('."'" . addslashes($spotify_track_name) . "','" . addslashes($artist) . "','" . $spotify_track_uri . "','" . addslashes($spotify_album_name) . "','" . $spotify_album_id . "')");
+                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ('."'" . SQLite3::escapeString($spotify_track_name) . "','" . SQLite3::escapeString($artist) . "','" . $spotify_track_uri . "','" . SQLite3::escapeString($spotify_album_name) . "','" . $spotify_album_id . "')");
                                     }
                                 }
                             } elseif ($album_id) {
@@ -145,19 +221,19 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                                     $spotify_track_name = $track_name->name;
                                     $spotify_track_uri = $track_name->uri;
 
-                                    $track_id = $db->querySingle('select id from tracks where Track='."'" . addslashes($spotify_track_name) . "' and Link='" . $spotify_track_uri . "'");
+                                    $track_id = $db->querySingle('select id from tracks where Track='."'" . SQLite3::escapeString($spotify_track_name) . "' and Link='" . $spotify_track_uri . "'");
                                     if (!$track_id) {
-                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ('."'" . addslashes($spotify_track_name) . "','" . addslashes($artist) . "','" . $spotify_track_uri . "','" . addslashes($spotify_album_name) . "','" . $spotify_album_id . "')");
+                                        $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ('."'" . SQLite3::escapeString($spotify_track_name) . "','" . SQLite3::escapeString($artist) . "','" . $spotify_track_uri . "','" . SQLite3::escapeString($spotify_album_name) . "','" . $spotify_album_id . "')");
                                     }
                                 }
-                            }
+                            }*/
                         }
                     }
-                    $id = $db->querySingle('select id from beatprottracks where track_name='."'" . addslashes($title) . "' and artist='" . addslashes($artist) . "'");
+                    $id = $db->querySingle('select id from beatprottracks where track_name='."'" . SQLite3::escapeString($title) . "' and artist='" . SQLite3::escapeString($artist) . "'");
                     if ($id) {
                         $db->exec('update beatprottracks set link="' . $link_to_track . '" where id=' . $id);
                     } else {
-                        $db->exec('insert into beatprottracks ("track_name","artist","link") values ('."'" . addslashes($title) . "','" . addslashes($artist) . "','" . $link . "')");
+                        $db->exec('insert into beatprottracks ("track_name","artist","link") values ('."'" . SQLite3::escapeString($title) . "','" . SQLite3::escapeString($artist) . "','" . $link . "')");
                     }
                 }
                 $next_page = $htmlqp->find('.pag-next');
@@ -172,50 +248,27 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
             if ($ipCount == $final_page)
                 $pages = false;
         }
-
-        $id_c = 0;
-
-        echo '<table border = "1" style = "width:100%">';
-        echo '<tr>';
-
-        while (true) {
-
-            $id_c ++;
-
-            $check_id = $db->querySingle('select artist from beatprottracks where id="' . $id_c . '"');
-
-            if (empty($check_id)) {
-                echo '<br>';
-                echo 'Last row. Breaking the loop.';
-                echo '<br>';
-                break;
-            }
-
-            $get_track = $db->querySingle('select track_name from beatprottracks where id="' . $id_c . '" and artist="' . $check_id . '"');
-
-            $get_link = $db->querySingle('select Link from tracks where "Track" LIKE  "%' . $get_track . '%" and Artist LIKE  "' . $check_id . '"');
-
-
-            if ($get_link) {
-
-                $display_id = $db->querySingle('select id from display where Track="' . $get_track . '" and uri="' . $get_link . '"');
-
-                if ($display_id) {
-                        $db->exec('update display set uri="' . $get_track . '" where id=' . $display_id);
-                    } else {
-                        $db->exec('insert into display ("Artist","Track","uri") values ("' . $check_id . '","' . $get_track . '","' . $get_link . '")');
-                    }
-
-
-                echo '</tr>';
-                echo '<td>' . $check_id . '</td>';
-                echo '<td>' . $get_track . '</td>';
-                echo '<td> <a href=' . $get_track . '>' . $get_link . '</a> </td>';
-                #echo '<td>' . $get_link . '</td>';
-                echo '<tr>';
-            }
+        ?>
+        <table border = "1" style = "width:100%">
+            <thead><tr>
+                    <th>Track</th>
+                    <th>Artist</th>
+                    <th>Beat Prot Link</th>
+                    <th>Spotify Link</th>
+                </tr></thead>
+            <tbody>
+        <?php
+        $similar_tracks = $db->query('SELECT track_name,b.artist,b.link beatlink,t.Link spotify_link FROM beatprottracks as b join tracks as t on b.track_name=t.Track and b.artist=t.Artist');
+        while ($track = $similar_tracks->fetchArray()) { ?>
+            <tr>
+                <td><?php echo $track['track_name'];?></td>
+                <td><?php echo $track['artist'];?></td>
+                <td><?php echo $track['beatlink'];?></td>
+                <td><?php echo $track['spotify_link'];?></td>
+            </tr>
+        <?php
         }
-        echo '</table>';
+        echo '</tbody></table>';
         ?>
     </body>
 </html>
