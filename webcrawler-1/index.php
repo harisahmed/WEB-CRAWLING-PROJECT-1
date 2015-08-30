@@ -72,6 +72,8 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
         include __DIR__ . '/qp/qp.php';
         require __DIR__ .'/spotify-web-api-php-master/src/SpotifyWebAPI.php';
         require __DIR__ .'/spotify-web-api-php-master/src/Request.php';
+        require __DIR__ .'/spotify-web-api-php-master/src/Session.php';
+        require __DIR__ .'/spotify-web-api-php-master/src/SpotifyWebAPIException.php';
 
         $api = new SpotifyWebAPI\SpotifyWebAPI();
 
@@ -80,7 +82,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
         $final_page = isset($_GET['pages']) ? $_GET['pages'] : 1;
 
-        echo '<pre>';
+        //echo '<pre>';
         $ipCount = 0;
         while ($pages) {
 
@@ -116,9 +118,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                              if ($artist_name === $artist) {
                                 $artist_spotify_id = $spotify_id->id; //this is what we need
-                                echo '<br>';
-                                echo 'Artist name: ' . $artist_name;
-                                echo '<br>';
+                                //echo '<br>';
+                                //echo 'Artist name: ' . $artist_name;
+                                //echo '<br>';
                             }
                             //will save all artist IDs in DB for caching
                             $db->exec('insert into artist ("Artist_name","Artist_spotify_id") values ('."'" . SQLite3::escapeString($artist_name) . "','" . $artist_spotify_id_tmp . "')");
