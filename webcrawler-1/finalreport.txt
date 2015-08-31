@@ -1,0 +1,18 @@
+FINAL REPORT
+======================================
+GOAL was to crawl beatprot tracks database and find the same tracks on spotify to display found common tracks on both platforms.
+
+Crawled the Beatprot tracks and saved the cached downloaded HTML to folder on File System. Upto ?pages=(1|n=>infinity)
+
+Crawled spotify to get artist, artist albums, and album tracks to get same track on both platforms using exact Match of Track Name and Artist Name.
+
+Displayed the results in pure HTML table.
+
+=====================================================
+POINTS OF FURTHER IMPROVEMENTS
+------------------------------
+Exact Match can be replaced by Fuzzy join, or in-case sensitive search to get more same tracks but this could introduce some tracks which are not exactly same.
+
+Matching like - remix, -original, - old etc could be added.
+
+Caching of pages and spotify data is good, but needs to add a mechanism to clear cached data after (XX number of hours).
