@@ -104,9 +104,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     $link_to_track = 'https://pro.beatport.com' . $track->find('.buk-track-title > a')->first()->attr('href');
 
                     //CHECK IF ARTIST ALREADY EXIST IN DATABASE, PRIOR TO SEARCHING ON SPOTIFY
-                    $artist_spotify_id = $db->querySingle("select Artist_spotify_id from artist where Artist_name='" . SQLite3::escapeString($artist) . "'"); #Like msq_realescape.
-                    
-                    if (!$artist_spotify_id)   # If not in database -- get id via Spotify API.
+                    $artist_spotify_id = $db->querySingle("select Artist_spotify_id from artist where Artist_name='" . SQLite3::escapeString($artist) . "'"); //Like msq_realescape.
+
+                    if (!$artist_spotify_id) { // If not in database -- get id via Spotify API.
                         $spotify_artist = $api->search($artist, 'artist');
                         //Geting artist id via Spotify Api
                         foreach ($spotify_artist->artists->items as $spotify_id) {
@@ -133,15 +133,15 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                     if ($artist_spotify_id) { //changed to artist spotify ID we found in upper code block.
 
-                        $artist_albums = new stdClass(); #What is STD class? It's a class without a methods. You can give him yours.
-                        $artist_albums->items = array(); #Creating dictionary.
-                        $artist_albums_result = $db->query("select * from album where Artist_Spotify_id='" . SQLite3::escapeString($artist_spotify_id) . "'"); # Getting album dictionary using spotify id.
-                        while ($album = $artist_albums_result->fetchArray()) { #Loop in this array to check if album in database.
+                        $artist_albums = new stdClass(); //What is STD class? It's a class without a methods. You can give him yours.
+                        $artist_albums->items = array(); //Creating dictionary.
+                        $artist_albums_result = $db->query("select * from album where Artist_Spotify_id='" . SQLite3::escapeString($artist_spotify_id) . "'"); //Getting album dictionary using spotify id.
+                        while ($album = $artist_albums_result->fetchArray()) { //Loop in this array to check if album in database.
                             //here you have database fetched artist albums. saved during last run. use it
-                            $item = new stdClass(); #Declaring item class.
-                            $item->name=$album['Album_name']; #Creating dictionary. 
+                            $item = new stdClass(); //Declaring item class.
+                            $item->name=$album['Album_name']; //Creating dictionary. 
                             $item->id=$album['Album_id'];
-                            $artist_albums->items[] = $item; #Cool aproach. Seting dictionary inside to database.
+                            $artist_albums->items[] = $item; //Seting dictionary inside to database.
                         }
 
                         if(count($artist_albums->items)==0){ // search spotify for artist albums only if database does not contain any albums.
@@ -163,12 +163,12 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                             $spotify_tracks = new stdClass();
                             $spotify_tracks->items = array();
                             $spotify_tracks_result = $db->query("select * from tracks where Album_id='" . SQLite3::escapeString($spotify_album_id) . "'");
-                            while ($track = $spotify_tracks_result->fetchArray()) {
+                            while ($track = $spotify_tracks_result->fetchArray()) { // Geting tracks using albums id in database. 
                                 //here you have database fetched artist albums tacks. saved during last run. use it
-                                $item = new stdClass(); // Geting tracks using albums id in database. 
+                                $item = new stdClass(); 
                                 $item->name = $track['Track'];
                                 $item->external_urls = new stdClass();
-                                $item->external_urls->spotify = $track['Link']; #That's how you fill a dictionary. Don't understand this. Got it. If you don't get any tracks with this -- fill the database with empty uri.
+                                $item->external_urls->spotify = $track['Link'];  //That's how you fill a dictionary.  If you don't get any tracks with this  -- fill the database with empty uri.
                                 $spotify_tracks->items[] = $item;
                             }
 
@@ -177,7 +177,7 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
                                 foreach ($spotify_tracks->items as $track) {
                                     $spotify_track_name = $track->name;
-                                    $spotify_track_uri = $track->external_urls->spotify; #Filling the database with tracks using id.
+                                    $spotify_track_uri = $track->external_urls->spotify; //Filling the database with tracks using id.
 
                                     $db->exec('insert into tracks ("Track","Artist","Link", "Album", "Album_id") values ('."'"
                                                                     . SQLite3::escapeString($spotify_track_name) . "','"
@@ -245,11 +245,11 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
 
             $ipCount++;
 
-            if ($ipCount == $final_page) {
-                $pages = false; # How does this work? Variables aren't defined. Some kind of table style, perhaps.
+            if ($ipCount == $final_page)
+                $pages = false;
         }
-        ?> 
-        <table border = "1" style = "width:100%">  
+        ?>
+        <table border = "1" style = "width:100%">
             <thead><tr>
                     <th>Track</th>
                     <th>Artist</th>
@@ -257,9 +257,9 @@ if (!file_exists(__DIR__ . '/beatprot.sqlite')) {
                     <th>Spotify Link</th>
                 </tr></thead>
             <tbody>
-        <?php
-        $similar_tracks = $db->query('SELECT track_name,b.artist,b.link beatlink,t.Link spotify_link FROM beatprottracks as b join tracks as t on b.track_name=t.Track and b.artist=t.Artist');
-        while ($track = $similar_tracks->fetchArray()) { ?> #Getting all the stuff from database.
+        <?php //Filling the database with tracks using id.
+        $similar_tracks = $db->query('SELECT track_name,b.artist,b.link beatlink,t.Link spotify_link FROM beatprottracks as b join tracks as t on b.track_name=t.Track and b.artist=t.Artist'); 
+        while ($track = $similar_tracks->fetchArray()) { ?> 
             <tr>
                 <td><?php echo $track['track_name'];?></td>
                 <td><?php echo $track['artist'];?></td>
